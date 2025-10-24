@@ -395,3 +395,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - [Tavily](https://tavily.com/) for the research API
 - All other open-source libraries and their contributors
+#   a g e n t - d e - r e c h e r c h e - e n t r e p r i s e  
+ 
