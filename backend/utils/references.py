@@ -131,7 +131,7 @@ def process_references_from_search_results(state: Dict[str, Any]) -> Tuple[List[
     data_types = ['curated_company_data', 'curated_industry_data', 'curated_financial_data', 'curated_news_data']
     
     # Log the start of reference processing
-    logger.info("Starting to process references from search results")
+    logger.info("Début du traitement des références à partir des résultats de recherche")
     
     for data_type in data_types:
         if curated_data := state.get(data_type, {}):
@@ -144,21 +144,21 @@ def process_references_from_search_results(state: Dict[str, Any]) -> Tuple[List[
                         # Fallback to raw score if available
                         score = float(doc.get('score', 0))
                     
-                    logger.info(f"Found reference in {data_type}: URL={url}, Score={score:.4f}")
+                    logger.info(f"Référence trouvée dans {data_type} : URL={url}, Score={score:.4f}")
                     all_top_references.append((url, score))
                 except (KeyError, ValueError, TypeError) as e:
-                    logger.warning(f"Error processing score for {url} in {data_type}: {e}")
+                    logger.warning(f"Erreur lors du traitement du score pour {url} dans {data_type} : {e}")
                     continue
     
-    logger.info(f"Collected a total of {len(all_top_references)} references before deduplication")
+    logger.info(f"Collecté un total de {len(all_top_references)} références avant déduplication")
     
     # Sort references by score in descending order
     all_top_references.sort(key=lambda x: float(x[1]), reverse=True)
     
     # Log top 20 references before deduplication to verify sorting
-    logger.info("Top 20 references by score before deduplication:")
+    logger.info("Top 20 des références par score avant déduplication :")
     for i, (url, score) in enumerate(all_top_references[:20]):
-        logger.info(f"{i+1}. Score: {score:.4f} - URL: {url}")
+        logger.info(f"{i+1}. Score : {score:.4f} - URL : {url}")
     
     # Use a set to store unique URLs, keeping only the highest scored version of each URL
     seen_urls = set()
@@ -198,12 +198,12 @@ def process_references_from_search_results(state: Dict[str, Any]) -> Tuple[List[
                                 title = clean_title(title)
                                 if title and title.strip() and title != url:
                                     reference_titles[normalized_url] = title
-                                    logger.info(f"Found title for URL {url}: '{title}'")
+                                    logger.info(f"Titre trouvé pour l'URL {url} : '{title}'")
                                     break
             
             # If no title was found, log it
             if not title:
-                logger.info(f"No valid title found for URL {url}")
+                logger.info(f"Aucun titre valide trouvé pour l'URL {url}")
             
             # Extract a better website name from the domain
             website_name = extract_website_name_from_domain(domain)
@@ -216,26 +216,26 @@ def process_references_from_search_results(state: Dict[str, Any]) -> Tuple[List[
                 'url': normalized_url,
                 'score': score
             }
-            logger.info(f"Stored reference info for {normalized_url} with score {score:.4f}")
+            logger.info(f"Informations de référence enregistrées pour {normalized_url} avec un score de {score:.4f}")
     
     # Sort unique references by score again to ensure proper ordering
     unique_references.sort(key=lambda x: float(x[1]), reverse=True)
     
     # Log unique references by score to verify sorting
-    logger.info(f"Found {len(unique_references)} unique references after deduplication")
-    logger.info("Unique references by score (sorted):")
+    logger.info(f"Trouvé {len(unique_references)} références uniques après déduplication")
+    logger.info("Références uniques par score (triées) :")
     for i, (url, score) in enumerate(unique_references):
-        logger.info(f"{i+1}. Score: {score:.4f} - URL: {url}")
+        logger.info(f"{i+1}. Score : {score:.4f} - URL : {url}")
     
     # Take exactly 10 unique references (or all if less than 10)
     top_references = unique_references[:10]
     top_reference_urls = [url for url, _ in top_references]
     
     # Log final top 10 references
-    logger.info(f"Final top {len(top_reference_urls)} references selected:")
+    logger.info(f"Sélection finale des {len(top_reference_urls)} meilleures références :")
     for i, url in enumerate(top_reference_urls):
         score = next((s for u, s in unique_references if u == url), 0)
-        logger.info(f"{i+1}. Score: {score:.4f} - URL: {url}")
+        logger.info(f"{i+1}. Score : {score:.4f} - URL : {url}")
     
     return top_reference_urls, reference_titles, reference_info
 
@@ -304,7 +304,7 @@ def format_references_section(references: List[str], reference_info: Dict[str, D
     if not references:
         return ""
     
-    logger.info(f"Formatting {len(references)} references for the report")
+    logger.info(f"Formatage de {len(references)} références pour le rapport")
     
     # Create a list of reference entries with all the information needed
     reference_entries = []
@@ -317,19 +317,19 @@ def format_references_section(references: List[str], reference_info: Dict[str, D
         # If title is not in reference_info, try to get it from reference_titles
         if not title or title.strip() == "":
             title = reference_titles.get(ref, '')
-            logger.info(f"Using title from reference_titles for {ref}: '{title}'")
+            logger.info(f"Utilisation du titre depuis reference_titles pour {ref} : '{title}'")
         
         domain = info.get('domain', '')
         
         # If we don't have a title, use the URL
         if not title or title.strip() == "" or title == ref:
             title = ref
-            logger.info(f"No title found for {ref}, using URL as title")
+            logger.info(f"Aucun titre trouvé pour {ref}, utilisation de l'URL comme titre")
         
         # If we don't have a website name, extract it from the URL
         if not website or website.strip() == "":
             website = extract_domain_name(ref)
-            logger.info(f"No website name found for {ref}, extracted: {website}")
+            logger.info(f"Aucun nom de site trouvé pour {ref}, extrait : {website}")
         
         # Create a reference entry with all information
         entry = {
@@ -339,21 +339,21 @@ def format_references_section(references: List[str], reference_info: Dict[str, D
             'domain': domain,
             'score': score
         }
-        logger.info(f"Created reference entry: {entry}")
+        logger.info(f"Entrée de référence créée : {entry}")
         reference_entries.append(entry)
     
     # Keep references in the same order they were provided (which should be by score)
     # This preserves the top 10 scoring order from process_references_from_search_results
-    logger.info("Maintaining reference order based on scores")
+    logger.info("Maintien de l'ordre des références basé sur les scores")
     
     # Format references in MLA style
-    reference_lines = ["\n## References"]
+    reference_lines = ["\n## Références"]
     for entry in reference_entries:
         reference_line = format_reference_for_markdown(entry)
         reference_lines.append(reference_line)
-        logger.info(f"Added reference: {reference_line}")
+        logger.info(f"Référence ajoutée : {reference_line}")
     
     reference_text = "\n".join(reference_lines)
-    logger.info(f"Completed references section with {len(reference_entries)} entries")
+    logger.info(f"Section Références complétée avec {len(reference_entries)} entrées")
     
     return reference_text 

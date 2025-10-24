@@ -17,7 +17,7 @@ declare global {
 const LocationInput: React.FC<LocationInputProps> = ({ value, onChange, className }) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const autocompleteElementRef = useRef<any>(null);
-  const [isApiLoaded, setIsApiLoaded] = useState(false);
+  const [isApiLoaded] = useState(false);
   const onChangeRef = useRef(onChange);
   const isInitializedRef = useRef(false);
 
@@ -28,20 +28,7 @@ const LocationInput: React.FC<LocationInputProps> = ({ value, onChange, classNam
 
   // Load the Google Maps API
   useEffect(() => {
-    const loadApi = async () => {
-      try {
-        await loadGoogleMapsScript();
-        setIsApiLoaded(true);
-      } catch (error) {
-        console.error('Failed to load Google Maps API:', error);
-        // Ensure input is visible when Google Maps fails to load
-        if (inputRef.current) {
-          inputRef.current.style.display = '';
-        }
-      }
-    };
 
-    loadApi();
   }, []);
 
   // Initialize autocomplete when API is loaded and input is available
@@ -193,7 +180,7 @@ const LocationInput: React.FC<LocationInputProps> = ({ value, onChange, classNam
           }
         }}
         className={`${className} !font-['DM_Sans']`}
-        placeholder="City, Country"
+        placeholder=""
       />
     </div>
   );

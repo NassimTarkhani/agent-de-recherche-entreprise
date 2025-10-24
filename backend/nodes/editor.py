@@ -10,60 +10,57 @@ from ..utils.references import format_references_section
 
 logger = logging.getLogger(__name__)
 
-
-
-
 class Editor:
-    """Compiles individual section briefings into a cohesive final report."""
+    """Compile les synthèses de chaque section en un rapport final cohérent."""
     
     def __init__(self) -> None:
         self.openai_key = os.getenv("OPENAI_API_KEY")
         if not self.openai_key:
-            raise ValueError("OPENAI_API_KEY environment variable is not set")
+            raise ValueError("La variable d’environnement OPENAI_API_KEY n’est pas définie")
         
-        # Configure OpenAI
+        # Configuration d’OpenAI
         self.openai_client = AsyncOpenAI(api_key=self.openai_key)
         
-        # Initialize context dictionary for use across methods
+        # Initialisation du dictionnaire de contexte utilisé dans les méthodes
         self.context = {
-            "company": "Unknown Company",
-            "industry": "Unknown",
-            "hq_location": "Unknown"
+            "company": "Entreprise inconnue",
+            "industry": "Secteur inconnu",
+            "hq_location": "Inconnue"
         }
 
     async def compile_briefings(self, state: ResearchState) -> ResearchState:
-        """Compile individual briefing categories from state into a final report."""
-        company = state.get('company', 'Unknown Company')
+        """Compile les différentes synthèses en un rapport final."""
+        company = state.get('company', 'Entreprise inconnue')
         
-        # Update context with values from state
+        # Mettre à jour le contexte avec les valeurs de l’état
         self.context = {
             "company": company,
-            "industry": state.get('industry', 'Unknown'),
-            "hq_location": state.get('hq_location', 'Unknown')
+            "industry": state.get('industry', 'Secteur inconnu'),
+            "hq_location": state.get('hq_location', 'Inconnue')
         }
         
-        # Send initial compilation status
+        # Envoi du statut initial de compilation
         if websocket_manager := state.get('websocket_manager'):
             if job_id := state.get('job_id'):
                 await websocket_manager.send_status_update(
                     job_id=job_id,
                     status="processing",
-                    message=f"Starting report compilation for {company}",
+                    message=f"Démarrage de la compilation du rapport pour {company}",
                     result={
-                        "step": "Editor",
-                        "substep": "initialization"
+                        "step": "Éditeur",
+                        "substep": "initialisation"
                     }
                 )
 
         context = {
             "company": company,
-            "industry": state.get('industry', 'Unknown'),
-            "hq_location": state.get('hq_location', 'Unknown')
+            "industry": state.get('industry', 'Secteur inconnu'),
+            "hq_location": state.get('hq_location', 'Inconnue')
         }
         
-        msg = [f"📑 Compiling final report for {company}..."]
+        msg = [f"📑 Compilation du rapport final pour {company}..."]
         
-        # Pull individual briefings from dedicated state keys
+        # Récupération des synthèses individuelles à partir de l’état
         briefing_keys = {
             'company': 'company_briefing',
             'industry': 'industry_briefing',
@@ -71,16 +68,16 @@ class Editor:
             'news': 'news_briefing'
         }
 
-        # Send briefing collection status
+        # Envoi du statut de collecte des synthèses
         if websocket_manager := state.get('websocket_manager'):
             if job_id := state.get('job_id'):
                 await websocket_manager.send_status_update(
                     job_id=job_id,
                     status="processing",
-                    message="Collecting section briefings",
+                    message="Collecte des synthèses de sections",
                     result={
-                        "step": "Editor",
-                        "substep": "collecting_briefings"
+                        "step": "Éditeur",
+                        "substep": "collecte_synthèses"
                     }
                 )
 
@@ -88,168 +85,163 @@ class Editor:
         for category, key in briefing_keys.items():
             if content := state.get(key):
                 individual_briefings[category] = content
-                msg.append(f"Found {category} briefing ({len(content)} characters)")
+                msg.append(f"Synthèse {category} trouvée ({len(content)} caractères)")
             else:
-                msg.append(f"No {category} briefing available")
-                logger.error(f"Missing state key: {key}")
+                msg.append(f"Aucune synthèse {category} disponible")
+                logger.error(f"Clé d’état manquante : {key}")
         
         if not individual_briefings:
-            msg.append("\n⚠️ No briefing sections available to compile")
-            logger.error("No briefings found in state")
+            msg.append("\n⚠️ Aucune section de synthèse disponible pour la compilation")
+            logger.error("Aucune synthèse trouvée dans l’état")
         else:
             try:
                 compiled_report = await self.edit_report(state, individual_briefings, context)
                 if not compiled_report or not compiled_report.strip():
-                    logger.error("Compiled report is empty!")
+                    logger.error("Le rapport compilé est vide !")
                 else:
-                    logger.info(f"Successfully compiled report with {len(compiled_report)} characters")
+                    logger.info(f"Rapport compilé avec succès ({len(compiled_report)} caractères)")
             except Exception as e:
-                logger.error(f"Error during report compilation: {e}")
+                logger.error(f"Erreur lors de la compilation du rapport : {e}")
         state.setdefault('messages', []).append(AIMessage(content="\n".join(msg)))
         return state
     
     async def edit_report(self, state: ResearchState, briefings: Dict[str, str], context: Dict[str, Any]) -> str:
-        """Compile section briefings into a final report and update the state."""
+        """Assemble les sections en un rapport final et met à jour l’état."""
         try:
             company = self.context["company"]
             
-            # Step 1: Initial Compilation
+            # Étape 1 : Compilation initiale
             if websocket_manager := state.get('websocket_manager'):
                 if job_id := state.get('job_id'):
                     await websocket_manager.send_status_update(
                         job_id=job_id,
                         status="processing",
-                        message="Compiling initial research report",
+                        message="Compilation du rapport de recherche initial",
                         result={
-                            "step": "Editor",
+                            "step": "Éditeur",
                             "substep": "compilation"
                         }
                     )
 
             edited_report = await self.compile_content(state, briefings, company)
             if not edited_report:
-                logger.error("Initial compilation failed")
+                logger.error("Échec de la compilation initiale")
                 return ""
 
-            # Step 2: Deduplication and Cleanup
+            # Étape 2 : Nettoyage et déduplication
             if websocket_manager := state.get('websocket_manager'):
                 if job_id := state.get('job_id'):
                     await websocket_manager.send_status_update(
                         job_id=job_id,
                         status="processing",
-                        message="Cleaning up and organizing report",
+                        message="Nettoyage et organisation du rapport",
                         result={
-                            "step": "Editor",
-                            "substep": "cleanup"
+                            "step": "Éditeur",
+                            "substep": "nettoyage"
                         }
                     )
 
-            # Step 3: Formatting Final Report
+            # Étape 3 : Mise en forme du rapport final
             if websocket_manager := state.get('websocket_manager'):
                 if job_id := state.get('job_id'):
                     await websocket_manager.send_status_update(
                         job_id=job_id,
                         status="processing",
-                        message="Formatting final report",
+                        message="Mise en forme du rapport final",
                         result={
-                            "step": "Editor",
-                            "substep": "format"
+                            "step": "Éditeur",
+                            "substep": "mise_en_forme"
                         }
                     )
             final_report = await self.content_sweep(state, edited_report, company)
             
             final_report = final_report or ""
             
-            logger.info(f"Final report compiled with {len(final_report)} characters")
+            logger.info(f"Rapport final compilé ({len(final_report)} caractères)")
             if not final_report.strip():
-                logger.error("Final report is empty!")
+                logger.error("Le rapport final est vide !")
                 return ""
             
-            logger.info("Final report preview:")
+            logger.info("Aperçu du rapport final :")
             logger.info(final_report[:500])
             
-            # Update state with the final report in two locations
+            # Mise à jour de l’état avec le rapport final
             state['report'] = final_report
             state['status'] = "editor_complete"
             if 'editor' not in state or not isinstance(state['editor'], dict):
                 state['editor'] = {}
             state['editor']['report'] = final_report
-            logger.info(f"Report length in state: {len(state.get('report', ''))}")
+            logger.info(f"Taille du rapport dans l’état : {len(state.get('report', ''))}")
             
             if websocket_manager := state.get('websocket_manager'):
                 if job_id := state.get('job_id'):
                     await websocket_manager.send_status_update(
                         job_id=job_id,
                         status="editor_complete",
-                        message="Research report completed",
+                        message="Rapport de recherche terminé",
                         result={
-                            "step": "Editor",
+                            "step": "Éditeur",
                             "report": final_report,
                             "company": company,
                             "is_final": True,
-                            "status": "completed"
+                            "status": "terminé"
                         }
                     )
             
             return final_report
         except Exception as e:
-            logger.error(f"Error in edit_report: {e}")
+            logger.error(f"Erreur dans edit_report : {e}")
             return ""
     
     async def compile_content(self, state: ResearchState, briefings: Dict[str, str], company: str) -> str:
-        """Initial compilation of research sections."""
+        """Compilation initiale des sections de recherche."""
         combined_content = "\n\n".join(content for content in briefings.values())
         
         references = state.get('references', [])
         reference_text = ""
         if references:
-            logger.info(f"Found {len(references)} references to add during compilation")
+            logger.info(f"{len(references)} références trouvées à ajouter pendant la compilation")
             
-            # Get pre-processed reference info from curator
             reference_info = state.get('reference_info', {})
             reference_titles = state.get('reference_titles', {})
             
-            logger.info(f"Reference info from state: {reference_info}")
-            logger.info(f"Reference titles from state: {reference_titles}")
+            logger.info(f"Informations sur les références : {reference_info}")
+            logger.info(f"Titres des références : {reference_titles}")
             
-            # Use the references module to format the references section
             reference_text = format_references_section(references, reference_info, reference_titles)
-            logger.info(f"Added {len(references)} references during compilation")
+            logger.info(f"{len(references)} références ajoutées pendant la compilation")
         
-        # Use values from centralized context
         company = self.context["company"]
         industry = self.context["industry"]
         hq_location = self.context["hq_location"]
         
-        prompt = f"""You are compiling a comprehensive research report about {company}.
+        prompt = f"""Vous compilez un rapport de recherche complet sur {company}.
 
-Compiled briefings:
+Synthèses compilées :
 {combined_content}
 
-Create a comprehensive and focused report on {company}, a {industry} company headquartered in {hq_location} that:
-1. Integrates information from all sections into a cohesive non-repetitive narrative
-2. Maintains important details from each section
-3. Logically organizes information and removes transitional commentary / explanations
-4. Uses clear section headers and structure
+Rédigez un rapport complet et structuré sur {company}, une entreprise du secteur {industry} dont le siège est à {hq_location}, qui :
+1. Intègre les informations de toutes les sections sans répétition
+2. Préserve les détails importants de chaque section
+3. Organise logiquement le contenu et supprime les transitions inutiles
+4. Utilise des titres de section clairs
 
-Formatting rules:
-Strictly enforce this EXACT document structure:
+Structure obligatoire :
+# Rapport de recherche sur {company}
 
-# {company} Research Report
+## Présentation de l’entreprise
+[Contenu de l’entreprise avec ### sous-sections]
 
-## Company Overview
-[Company content with ### subsections]
+## Présentation du secteur
+[Contenu du secteur avec ### sous-sections]
 
-## Industry Overview
-[Industry content with ### subsections]
+## Présentation financière
+[Contenu financier avec ### sous-sections]
 
-## Financial Overview
-[Financial content with ### subsections]
+## Actualités
+[Contenu des actualités avec ### sous-sections]
 
-## News
-[News content with ### subsections]
-
-Return the report in clean markdown format. No explanations or commentary."""
+Retournez le rapport en **markdown clair**, sans explications ni commentaires."""
         
         try:
             response = await self.openai_client.chat.completions.create(
@@ -257,7 +249,7 @@ Return the report in clean markdown format. No explanations or commentary."""
                 messages=[
                     {
                         "role": "system",
-                        "content": "You are an expert report editor that compiles research briefings into comprehensive company reports."
+                        "content": "Vous êtes un rédacteur expert chargé de compiler des synthèses de recherche en rapports d’entreprise complets."
                     },
                     {
                         "role": "user",
@@ -269,69 +261,48 @@ Return the report in clean markdown format. No explanations or commentary."""
             )
             initial_report = response.choices[0].message.content.strip()
             
-            # Append the references section after LLM processing
             if reference_text:
                 initial_report = f"{initial_report}\n\n{reference_text}"
             
             return initial_report
         except Exception as e:
-            logger.error(f"Error in initial compilation: {e}")
+            logger.error(f"Erreur lors de la compilation initiale : {e}")
             return (combined_content or "").strip()
         
     async def content_sweep(self, state: ResearchState, content: str, company: str) -> str:
-        """Sweep the content for any redundant information."""
-        # Use values from centralized context
+        """Nettoie le contenu pour supprimer les redondances et incohérences."""
         company = self.context["company"]
         industry = self.context["industry"]
         hq_location = self.context["hq_location"]
         
-        prompt = f"""You are an expert briefing editor. You are given a report on {company}.
+        prompt = f"""Vous êtes un éditeur de synthèses expert. Vous devez corriger le rapport suivant sur {company}.
 
-Current report:
+Rapport actuel :
 {content}
 
-1. Remove redundant or repetitive information
-2. Remove information that is not relevant to {company}, the {industry} company headquartered in {hq_location}.
-3. Remove sections lacking substantial content
-4. Remove any meta-commentary (e.g. "Here is the news...")
+Tâches :
+1. Supprimer les informations redondantes
+2. Supprimer les éléments non pertinents pour {company}, entreprise du secteur {industry} basée à {hq_location}
+3. Supprimer les sections vides
+4. Supprimer tout méta-commentaire (“Voici les actualités…”)
 
-Strictly enforce this EXACT document structure:
+Structure obligatoire :
+## Présentation de l’entreprise
+## Présentation du secteur
+## Présentation financière
+## Actualités
+## Références
 
-## Company Overview
-[Company content with ### subsections]
+Règles :
+- Le document doit commencer par : # Rapport de recherche sur {company}
+- N’utiliser **que** ces en-têtes ## dans cet ordre exact
+- Pas d’autres en-têtes ## autorisés
+- Utiliser ### pour les sous-sections
+- Les actualités doivent utiliser uniquement des puces (*)
+- Aucun bloc de code, ni ligne vide multiple
+- Ne pas modifier la section Références
 
-## Industry Overview
-[Industry content with ### subsections]
-
-## Financial Overview
-[Financial content with ### subsections]
-
-## News
-[News content with ### subsections]
-
-## References
-[References in MLA format - PRESERVE EXACTLY AS PROVIDED]
-
-Critical rules:
-1. The document MUST start with "# {company} Research Report"
-2. The document MUST ONLY use these exact ## headers in this order:
-   - ## Company Overview
-   - ## Industry Overview
-   - ## Financial Overview
-   - ## News
-   - ## References
-3. NO OTHER ## HEADERS ARE ALLOWED
-4. Use ### for subsections in Company/Industry/Financial sections
-5. News section should only use bullet points (*), never headers
-6. Never use code blocks (```)
-7. Never use more than one blank line between sections
-8. Format all bullet points with *
-9. Add one blank line before and after each section/list
-10. DO NOT CHANGE the format of the references section
-
-Return the polished report in flawless markdown format. No explanation.
-
-Return the cleaned report in flawless markdown format. No explanations or commentary."""
+Retournez le rapport nettoyé en markdown parfait, sans explications."""
         
         try:
             response = await self.openai_client.chat.completions.create(
@@ -339,7 +310,7 @@ Return the cleaned report in flawless markdown format. No explanations or commen
                 messages=[
                     {
                         "role": "system",
-                        "content": "You are an expert markdown formatter that ensures consistent document structure."
+                        "content": "Vous êtes un formateur markdown expert garantissant la cohérence du document."
                     },
                     {
                         "role": "user",
@@ -362,10 +333,10 @@ Return the cleaned report in flawless markdown format. No explanations or commen
                             await websocket_manager.send_status_update(
                                 job_id=job_id,
                                 status="report_chunk",
-                                message="Formatting final report",
+                                message="Mise en forme du rapport final",
                                 result={
                                     "chunk": buffer,
-                                    "step": "Editor"
+                                    "step": "Éditeur"
                                 }
                             )
                     break
@@ -381,22 +352,22 @@ Return the cleaned report in flawless markdown format. No explanations or commen
                                 await websocket_manager.send_status_update(
                                     job_id=job_id,
                                     status="report_chunk",
-                                    message="Formatting final report",
+                                    message="Mise en forme du rapport final",
                                     result={
                                         "chunk": buffer,
-                                        "step": "Editor"
+                                        "step": "Éditeur"
                                     }
                                 )
                         buffer = ""
             
             return (accumulated_text or "").strip()
         except Exception as e:
-            logger.error(f"Error in formatting: {e}")
+            logger.error(f"Erreur de mise en forme : {e}")
             return (content or "").strip()
 
     async def run(self, state: ResearchState) -> ResearchState:
         state = await self.compile_briefings(state)
-        # Ensure the Editor node's output is stored both top-level and under "editor"
+        # S’assurer que la sortie de l’éditeur est stockée au niveau supérieur et dans “editor”
         if 'report' in state:
             if 'editor' not in state or not isinstance(state['editor'], dict):
                 state['editor'] = {}

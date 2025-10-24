@@ -1,4 +1,5 @@
 import asyncio
+from fastapi.staticfiles import StaticFiles
 import logging
 import os
 import uuid
@@ -8,7 +9,7 @@ from pathlib import Path
 
 import uvicorn
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from pydantic import BaseModel
@@ -58,7 +59,7 @@ if mongo_uri := os.getenv("MONGODB_URI"):
         mongodb = MongoDBService(mongo_uri)
         logger.info("MongoDB integration enabled")
     except Exception as e:
-        logger.warning(f"Failed to initialize MongoDB: {e}. Continuing without persistence.")
+        logger.warning(f"Échec de l'initialisation de MongoDB : {e}. Poursuite sans persistance.")
 
 class ResearchRequest(BaseModel):
     company: str
@@ -88,7 +89,7 @@ async def research(data: ResearchRequest):
         response = JSONResponse(content={
             "status": "accepted",
             "job_id": job_id,
-            "message": "Research started. Connect to WebSocket for updates.",
+            "message": "Recherche démarrée. Connectez-vous au WebSocket pour suivre l'avancement.",
             "websocket_url": f"/research/ws/{job_id}"
         })
         response.headers["Access-Control-Allow-Origin"] = "*"
@@ -137,7 +138,7 @@ async def process_research(job_id: str, data: ResearchRequest):
             await manager.send_status_update(
                 job_id=job_id,
                 status="completed",
-                message="Research completed successfully",
+                message="Recherche terminée avec succès",
                 result={
                     "report": report_content,
                     "company": data.company
@@ -148,30 +149,45 @@ async def process_research(job_id: str, data: ResearchRequest):
             logger.error(f"Editor state: {state.get('editor', {})}")
             
             # Check if there was a specific error in the state
-            error_message = "No report found"
+            error_message = "Aucun rapport trouvé"
             if error := state.get('error'):
-                error_message = f"Error: {error}"
+                error_message = f"Erreur : {error}"
             
             await manager.send_status_update(
                 job_id=job_id,
                 status="failed",
-                message="Research completed but no report was generated",
+                message="La recherche s'est terminée mais aucun rapport n'a été généré",
                 error=error_message
             )
 
     except Exception as e:
-        logger.error(f"Research failed: {str(e)}")
+        logger.error(f"La recherche a échoué : {str(e)}")
         await manager.send_status_update(
             job_id=job_id,
             status="failed",
-            message=f"Research failed: {str(e)}",
+            message=f"La recherche a échoué : {str(e)}",
             error=str(e)
         )
         if mongodb:
             mongodb.update_job(job_id=job_id, status="failed", error=str(e))
-@app.get("/")
-async def ping():
-    return {"message": "Alive"}
+app.mount("/assets", StaticFiles(directory="ui/dist/assets"), name="assets")
+
+@app.get("/{full_path:path}")
+async def serve_static(full_path: str, request: Request):
+    # Skip API routes
+    if full_path.startswith("research/"):
+        raise HTTPException(status_code=404)
+        
+    if full_path == "":
+        # Serve index.html for root path
+        return FileResponse("ui/dist/index.html")
+    else:
+        # For any other path, try to serve from the dist directory
+        file_path = f"ui/dist/{full_path}"
+        if os.path.exists(file_path):
+            return FileResponse(file_path)
+        # If file doesn't exist, return index.html for client-side routing
+        return FileResponse("ui/dist/index.html")
 
 @app.get("/research/pdf/{filename}")
 async def get_pdf(filename: str):
@@ -248,6 +264,22 @@ async def generate_pdf(data: PDFGenerationRequest):
             raise HTTPException(status_code=500, detail=result)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+# Mount static files from the UI build directory
+app.mount("/assets", StaticFiles(directory="ui/dist/assets"), name="assets")
+
+@app.get("/{full_path:path}")
+async def serve_static(full_path: str, request: Request):
+    if full_path == "":
+        # Serve index.html for root path
+        return FileResponse("ui/dist/index.html")
+    else:
+        # For any other path, try to serve from the dist directory
+        file_path = f"ui/dist/{full_path}"
+        if os.path.exists(file_path):
+            return FileResponse(file_path)
+        # If file doesn't exist, return index.html for client-side routing
+        return FileResponse("ui/dist/index.html")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

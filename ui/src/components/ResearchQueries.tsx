@@ -14,15 +14,15 @@ const ResearchQueries: React.FC<ResearchQueriesProps> = ({
   const fadeInAnimation = "transition-all duration-300 ease-in-out";
 
   return (
-    <div 
+    <div
       className={`${glassCardStyle} ${fadeInAnimation} ${isResetting ? 'opacity-0 transform -translate-y-4' : 'opacity-100 transform translate-y-0'} font-['DM_Sans']`}
     >
-      <div 
+      <div
         className="flex items-center justify-between cursor-pointer"
         onClick={onToggleExpand}
       >
         <h2 className="text-xl font-semibold text-gray-900">
-          Generated Research Queries
+          Requêtes de recherche générées
         </h2>
         <button className="text-gray-600 hover:text-gray-900 transition-colors">
           {isExpanded ? (
@@ -32,15 +32,14 @@ const ResearchQueries: React.FC<ResearchQueriesProps> = ({
           )}
         </button>
       </div>
-      
-      <div className={`overflow-hidden transition-all duration-500 ease-in-out ${
-        isExpanded ? 'mt-4 max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'
-      }`}>
+
+      <div className={`overflow-hidden transition-all duration-500 ease-in-out ${isExpanded ? 'mt-4 max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'
+        }`}>
         <div className="grid grid-cols-2 gap-4">
           {['company', 'industry', 'financial', 'news'].map((category) => (
             <div key={category} className={`${glassStyle} rounded-xl p-3`}>
               <h3 className="text-base font-medium text-gray-900 mb-3 capitalize">
-                {category.charAt(0).toUpperCase() + category.slice(1)} Queries
+                {category.charAt(0).toUpperCase() + category.slice(1)} Requêtes
               </h3>
               <div className="space-y-2">
                 {/* Show streaming queries first */}
@@ -65,10 +64,10 @@ const ResearchQueries: React.FC<ResearchQueriesProps> = ({
           ))}
         </div>
       </div>
-      
+
       {!isExpanded && (
         <div className="mt-2 text-sm text-gray-600">
-          {queries.length} queries generated across {['company', 'industry', 'financial', 'news'].length} categories
+          {queries.length} Les requêtes générées à travers {['company', 'industry', 'financial', 'news'].length} categories
         </div>
       )}
     </div>

@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Building2, Factory, Globe, Loader2, Search } from 'lucide-react';
 import LocationInput from './LocationInput';
-import ExamplePopup, { ExampleCompany } from './ExamplePopup';
 
 interface FormData {
   companyName: string;
@@ -32,24 +31,15 @@ const ResearchForm: React.FC<ResearchFormProps> = ({
     companyHq: "",
     companyIndustry: "",
   });
-  
+
   // Animation states
-  const [showExampleSuggestion, setShowExampleSuggestion] = useState(true);
-  const [isExampleAnimating, setIsExampleAnimating] = useState(false);
   const [wasResearching, setWasResearching] = useState(false);
-  
+
   // Refs for form fields for animation
   const formRef = useRef<HTMLDivElement>(null);
-  const exampleRef = useRef<HTMLDivElement>(null);
-  
+
   // Hide example suggestion when form is filled
-  useEffect(() => {
-    if (formData.companyName) {
-      setShowExampleSuggestion(false);
-    } else if (!isExampleAnimating) {
-      setShowExampleSuggestion(true);
-    }
-  }, [formData.companyName, isExampleAnimating]);
+
 
   // Track research state changes to show example popup when research completes
   useEffect(() => {
@@ -64,12 +54,11 @@ const ResearchForm: React.FC<ResearchFormProps> = ({
           companyHq: "",
           companyIndustry: "",
         });
-        
+
         // Show the example suggestion again
-        setShowExampleSuggestion(true);
       }, 1000);
     }
-    
+
     // Update tracking state
     setWasResearching(isResearching);
   }, [isResearching, wasResearching]);
@@ -78,55 +67,12 @@ const ResearchForm: React.FC<ResearchFormProps> = ({
     e.preventDefault();
     await onSubmit(formData);
   };
-  
-  const fillExampleData = (example: ExampleCompany) => {
-    // Start animation
-    setIsExampleAnimating(true);
-    
-    // Animate the suggestion moving into the form
-    if (exampleRef.current && formRef.current) {
-      const exampleRect = exampleRef.current.getBoundingClientRect();
-      const formRect = formRef.current.getBoundingClientRect();
-      
-      // Calculate the distance to move
-      const moveX = formRect.left + 20 - exampleRect.left;
-      const moveY = formRect.top + 20 - exampleRect.top;
-      
-      // Apply animation
-      exampleRef.current.style.transform = `translate(${moveX}px, ${moveY}px) scale(0.6)`;
-      exampleRef.current.style.opacity = '0';
-    }
-    
-    // Fill in form data after a short delay for animation
-    setTimeout(() => {
-      const newFormData = {
-        companyName: example.name,
-        companyUrl: example.url,
-        companyHq: example.hq,
-        companyIndustry: example.industry
-      };
-      
-      // Update form data
-      setFormData(newFormData);
-      
-      // Start research automatically (only if not already researching)
-      if (!isResearching) {
-        onSubmit(newFormData);
-      }
-      
-      setIsExampleAnimating(false);
-    }, 500);
-  };
+
 
   return (
     <div className="relative" ref={formRef}>
       {/* Example Suggestion */}
-      <ExamplePopup 
-        visible={showExampleSuggestion}
-        onExampleSelect={fillExampleData}
-        glassStyle={glassStyle}
-        exampleRef={exampleRef}
-      />
+
 
       {/* Main Form */}
       <div className={`${glassStyle.card} backdrop-blur-2xl bg-white/90 border-gray-200/50 shadow-xl`}>
@@ -138,7 +84,7 @@ const ResearchForm: React.FC<ResearchFormProps> = ({
                 htmlFor="companyName"
                 className="block text-base font-medium text-gray-700 mb-2.5 transition-all duration-200 group-hover:text-gray-900 font-['DM_Sans']"
               >
-                Company Name <span className="text-gray-900/70">*</span>
+                Nom d'entreprise <span className="text-gray-900/70">*</span>
               </label>
               <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-gray-50/0 via-gray-100/50 to-gray-50/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-lg"></div>
@@ -155,7 +101,7 @@ const ResearchForm: React.FC<ResearchFormProps> = ({
                     }))
                   }
                   className={`${glassStyle.input} transition-all duration-300 focus:border-[#468BFF]/50 focus:ring-1 focus:ring-[#468BFF]/50 group-hover:border-[#468BFF]/30 bg-white/80 backdrop-blur-sm text-lg py-4 pl-12 font-['DM_Sans']`}
-                  placeholder="Enter company name"
+                  placeholder="Entrer le nom d'entreprise"
                 />
               </div>
             </div>
@@ -166,7 +112,7 @@ const ResearchForm: React.FC<ResearchFormProps> = ({
                 htmlFor="companyUrl"
                 className="block text-base font-medium text-gray-700 mb-2.5 transition-all duration-200 group-hover:text-gray-900 font-['DM_Sans']"
               >
-                Company URL
+                URL d'entreprise
               </label>
               <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-gray-50/0 via-gray-100/50 to-gray-50/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-lg"></div>
@@ -182,7 +128,7 @@ const ResearchForm: React.FC<ResearchFormProps> = ({
                     }))
                   }
                   className={`${glassStyle.input} transition-all duration-300 focus:border-[#468BFF]/50 focus:ring-1 focus:ring-[#468BFF]/50 group-hover:border-[#468BFF]/30 bg-white/80 backdrop-blur-sm text-lg py-4 pl-12 font-['DM_Sans']`}
-                  placeholder="example.com"
+                  placeholder="exemple.com"
                 />
               </div>
             </div>
@@ -193,7 +139,7 @@ const ResearchForm: React.FC<ResearchFormProps> = ({
                 htmlFor="companyHq"
                 className="block text-base font-medium text-gray-700 mb-2.5 transition-all duration-200 group-hover:text-gray-900 font-['DM_Sans']"
               >
-                Company HQ
+                Adresse d'entreprise
               </label>
               <LocationInput
                 value={formData.companyHq}
@@ -213,7 +159,7 @@ const ResearchForm: React.FC<ResearchFormProps> = ({
                 htmlFor="companyIndustry"
                 className="block text-base font-medium text-gray-700 mb-2.5 transition-all duration-200 group-hover:text-gray-900 font-['DM_Sans']"
               >
-                Company Industry
+                Industrie
               </label>
               <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-gray-50/0 via-gray-100/50 to-gray-50/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-lg"></div>
@@ -229,7 +175,7 @@ const ResearchForm: React.FC<ResearchFormProps> = ({
                     }))
                   }
                   className={`${glassStyle.input} transition-all duration-300 focus:border-[#468BFF]/50 focus:ring-1 focus:ring-[#468BFF]/50 group-hover:border-[#468BFF]/30 bg-white/80 backdrop-blur-sm text-lg py-4 pl-12 font-['DM_Sans']`}
-                  placeholder="e.g. Technology, Healthcare"
+                  placeholder="Technologie, Santé"
                 />
               </div>
             </div>
@@ -245,12 +191,12 @@ const ResearchForm: React.FC<ResearchFormProps> = ({
               {isResearching ? (
                 <>
                   <Loader2 className="animate-spin -ml-1 mr-2 h-5 w-5 loader-icon" style={{ stroke: loaderColor }} />
-                  <span className="text-base font-medium text-gray-900/90">Researching...</span>
+                  <span className="text-base font-medium text-gray-900/90">Recherche en cours...</span>
                 </>
               ) : (
                 <>
                   <Search className="-ml-1 mr-2 h-5 w-5 text-gray-900/90" />
-                  <span className="text-base font-medium text-gray-900/90">Start Research</span>
+                  <span className="text-base font-medium text-gray-900/90">Commencer la recherche</span>
                 </>
               )}
             </div>

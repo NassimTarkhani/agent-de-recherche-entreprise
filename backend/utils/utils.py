@@ -18,7 +18,7 @@ from reportlab.platypus import (
 def extract_title_from_url_path(url: str) -> str:
     """Extract a title from a URL path."""
     parts = url.rstrip('/').split('/')
-    return parts[-1] if parts else 'No title found'
+    return parts[-1] if parts else 'Aucun titre trouvé'
 
 def extract_link_info(markdown_link: str) -> tuple[str, str]:
     """Extract text and URL from a Markdown link [text](URL)."""
@@ -201,7 +201,7 @@ def generate_pdf_from_md(markdown_content: str, output_pdf) -> None:
                         line = ''.join(parts)
                     except Exception as e:
                         # If link processing fails, use the original line
-                        logger.error(f"Error processing links: {e}")
+                                        logger.error(f"Erreur lors du traitement des liens : {e}")
                 
                 # Add the paragraph
                 story.append(Paragraph(line, normal_style))

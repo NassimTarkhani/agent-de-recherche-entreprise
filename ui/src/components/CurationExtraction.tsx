@@ -27,17 +27,16 @@ const CurationExtraction: React.FC<CurationExtractionProps> = ({
   const glassCardStyle = `${glassStyle} rounded-2xl p-6`;
 
   return (
-    <div 
-      className={`${glassCardStyle} transition-all duration-300 ease-in-out ${
-        isResetting ? 'opacity-0 transform -translate-y-4' : 'opacity-100 transform translate-y-0'
-      }`}
+    <div
+      className={`${glassCardStyle} transition-all duration-300 ease-in-out ${isResetting ? 'opacity-0 transform -translate-y-4' : 'opacity-100 transform translate-y-0'
+        }`}
     >
-      <div 
+      <div
         className="flex items-center justify-between cursor-pointer"
         onClick={onToggleExpand}
       >
         <h2 className="text-xl font-semibold text-gray-900">
-          Curation and Extraction
+          Curation et Extraction
         </h2>
         <button className="text-gray-600 hover:text-gray-900 transition-colors">
           {isExpanded ? (
@@ -48,10 +47,9 @@ const CurationExtraction: React.FC<CurationExtractionProps> = ({
         </button>
       </div>
 
-      <div className={`overflow-hidden transition-all duration-500 ease-in-out ${
-        isExpanded ? 'mt-4 max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'
-      }`}>
-        <div className="grid grid-cols-4 gap-4">
+      <div className={`overflow-hidden transition-all duration-500 ease-in-out ${isExpanded ? 'mt-4 max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'
+        }`}>
+        <div className="grid grid-cols-4 gap-4 hidden">
           {['company', 'industry', 'financial', 'news'].map((category) => {
             const counts = enrichmentCounts?.[category as keyof EnrichmentCounts];
             return (
@@ -83,7 +81,7 @@ const CurationExtraction: React.FC<CurationExtractionProps> = ({
 
       {!isExpanded && enrichmentCounts && (
         <div className="mt-2 text-sm text-gray-600">
-          {Object.values(enrichmentCounts).reduce((acc, curr) => acc + curr.enriched, 0)} documents enriched from {Object.values(enrichmentCounts).reduce((acc, curr) => acc + curr.total, 0)} total
+          {Object.values(enrichmentCounts).reduce((acc, curr) => acc + curr.enriched, 0)} documents enrichéées de {Object.values(enrichmentCounts).reduce((acc, curr) => acc + curr.total, 0)} totales
         </div>
       )}
     </div>

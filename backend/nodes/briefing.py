@@ -16,7 +16,7 @@ class Briefing:
         self.max_doc_length = 8000  # Maximum document content length
         self.gemini_key = os.getenv("GEMINI_API_KEY")
         if not self.gemini_key:
-            raise ValueError("GEMINI_API_KEY environment variable is not set")
+            raise ValueError("La variable d'environnement GEMINI_API_KEY n'est pas définie")
         
         # Configure Gemini
         genai.configure(api_key=self.gemini_key)
@@ -37,7 +37,7 @@ class Briefing:
                 await websocket_manager.send_status_update(
                     job_id=job_id,
                     status="briefing_start",
-                    message=f"Generating {category} briefing",
+                    message=f"Génération du briefing {category}",
                     result={
                         "step": "Briefing",
                         "category": category,
@@ -46,103 +46,111 @@ class Briefing:
                 )
 
         prompts = {
-            'company': f"""Create a focused company briefing for {company}, a {industry} company based in {hq_location}.
-Key requirements:
-1. Start with: "{company} is a [what] that [does what] for [whom]"
-2. Structure using these exact headers and bullet points:
+            'company': f"""Rédigez un briefing ciblé sur l'entreprise {company}, une société du secteur {industry} basée à {hq_location}.
 
-### Core Product/Service
-* List distinct products/features
-* Include only verified technical capabilities
+        Exigences principales :
+        1. Commencez par : "{company} est un[e] [quoi] qui [fait quoi] pour [qui]"
+        2. Structurez le briefing en utilisant strictement les en-têtes et listes à puces suivantes :
 
-### Leadership Team
-* List key leadership team members
-* Include their roles and expertise
+        ### Produit/Service principal
+        * Listez les produits/caractéristiques distincts
+        * Incluez uniquement des capacités techniques vérifiées
 
-### Target Market
-* List specific target audiences
-* List verified use cases
-* List confirmed customers/partners
+        ### Équipe dirigeante
+        * Listez les membres clés de la direction
+        * Indiquez leurs rôles et expertises
 
-### Key Differentiators
-* List unique features
-* List proven advantages
+        ### Marché cible
+        * Listez les publics cibles spécifiques
+        * Listez les cas d'utilisation vérifiés
+        * Listez les clients/partenaires confirmés
 
-### Business Model
-* Discuss product / service pricing
-* List distribution channels
+        ### Différenciateurs clés
+        * Listez les caractéristiques uniques
+        * Listez les avantages prouvés
 
-3. Each bullet must be a single, complete fact
-4. Never mention "no information found" or "no data available"
-5. No paragraphs, only bullet points
-6. Provide only the briefing. No explanations or commentary.""",
+        ### Modèle économique
+        * Présentez la tarification produit/service
+        * Listez les canaux de distribution
 
-            'industry': f"""Create a focused industry briefing for {company}, a {industry} company based in {hq_location}.
-Key requirements:
-1. Structure using these exact headers and bullet points:
+        3. Chaque puce doit être un fait unique et complet
+        4. Ne jamais mentionner "aucune information trouvée" ou "aucune donnée disponible"
+        5. Pas de paragraphes, uniquement des puces
+        6. Fournissez uniquement le briefing. Aucune explication ni commentaire.
+        """,
 
-### Market Overview
-* State {company}'s exact market segment
-* List market size with year
-* List growth rate with year range
+            'industry': f"""Rédigez un briefing ciblé sur l'industrie pour {company}, entreprise du secteur {industry} basée à {hq_location}.
 
-### Direct Competition
-* List named direct competitors
-* List specific competing products
-* List market positions
+        Exigences principales :
+        1. Structurez en utilisant strictement les en-têtes et listes à puces suivantes :
 
-### Competitive Advantages
-• List unique technical features
-• List proven advantages
+        ### Aperçu du marché
+        * Indiquez le segment de marché exact de {company}
+        * Indiquez la taille du marché avec l'année
+        * Indiquez le taux de croissance avec la période
 
-### Market Challenges
-• List specific verified challenges
+        ### Concurrence directe
+        * Listez les concurrents directs nommés
+        * Listez les produits concurrents spécifiques
+        * Indiquez les positions sur le marché
 
-2. Each bullet must be a single, complete news event.
-3. No paragraphs, only bullet points
-4. Never mention "no information found" or "no data available"
-5. Provide only the briefing. No explanation.""",
+        ### Avantages concurrentiels
+        * Listez les caractéristiques techniques uniques
+        * Listez les avantages prouvés
 
-            'financial': f"""Create a focused financial briefing for {company}, a {industry} company based in {hq_location}.
-Key requirements:
-1. Structure using these headers and bullet points:
+        ### Enjeux du marché
+        * Listez les défis spécifiques vérifiés
 
-### Funding & Investment
-* Total funding amount with date
-* List each funding round with date
-* List named investors
+        2. Chaque puce doit être un fait unique (événement) complet.
+        3. Pas de paragraphes, uniquement des puces
+        4. Ne jamais mentionner "aucune information trouvée" ou "aucune donnée disponible"
+        5. Fournissez uniquement le briefing. Aucune explication.
+        """,
 
-### Revenue Model
-* Discuss product / service pricing if applicable
+            'financial': f"""Rédigez un briefing financier ciblé pour {company}, entreprise du secteur {industry} basée à {hq_location}.
 
-2. Include specific numbers when possible
-3. No paragraphs, only bullet points
-4. Never mention "no information found" or "no data available"
-5. NEVER repeat the same round of funding multiple times. ALWAYS assume that multiple funding rounds in the same month are the same round.
-6. NEVER include a range of funding amounts. Use your best judgement to determine the exact amount based on the information provided.
-6. Provide only the briefing. No explanation or commentary.""",
+        Exigences principales :
+        1. Structurez en utilisant ces en-têtes et puces :
 
-            'news': f"""Create a focused news briefing for {company}, a {industry} company based in {hq_location}.
-Key requirements:
-1. Structure into these categories using bullet points:
+        ### Financements & Investissements
+        * Montant total des financements avec la date
+        * Listez chaque tour de financement avec la date
+        * Listez les investisseurs nommés
 
-### Major Announcements
-* Product / service launches
-* New initiatives
+        ### Modèle de revenus
+        * Présentez la tarification produit/service si applicable
 
-### Partnerships
-* Integrations
-* Collaborations
+        2. Incluez des chiffres précis lorsque possible
+        3. Pas de paragraphes, uniquement des puces
+        4. Ne jamais mentionner "aucune information trouvée" ou "aucune donnée disponible"
+        5. NE PAS répéter le même tour de financement plusieurs fois. SUPPOSEZ que plusieurs annonces le même mois correspondent au même tour.
+        6. N'INCLUEZ JAMAIS une fourchette de montant. Utilisez votre jugement pour déterminer le montant exact à partir des informations fournies.
+        7. Fournissez uniquement le briefing. Aucune explication ni commentaire.
+        """,
 
-### Recognition
-* Awards
-* Press coverage
+            'news': f"""Rédigez un briefing d'actualités ciblé pour {company}, entreprise du secteur {industry} basée à {hq_location}.
 
-2. Sort newest to oldest
-3. One event per bullet point
-4. Do not mention "no information found" or "no data available"
-5. Never use ### headers, only bullet points
-6. Provide only the briefing. Do not provide explanations or commentary.""",
+        Exigences principales :
+        1. Structurez en catégories suivantes avec des puces :
+
+        ### Annonces majeures
+        * Lancements de produits/services
+        * Nouvelles initiatives
+
+        ### Partenariats
+        * Intégrations
+        * Collaborations
+
+        ### Reconnaissance
+        * Prix
+        * Couverture presse
+
+        2. Triez du plus récent au plus ancien
+        3. Un événement par puce
+        4. Ne pas mentionner "aucune information trouvée" ou "aucune donnée disponible"
+        5. N'utilisez pas les en-têtes ### dans la sortie finale, uniquement des puces
+        6. Fournissez uniquement le briefing. Ne fournissez pas d'explications ni de commentaires.
+        """,
         }
         
         # Normalize docs to a list of (url, doc) tuples
@@ -171,20 +179,20 @@ Key requirements:
                 break
         
         separator = "\n" + "-" * 40 + "\n"
-        prompt = f"""{prompts.get(category, 'Create a focused, informative and insightful research briefing on the company: {company} in the {industry} industry based on the provided documents.')}
+        prompt = f"""{prompts.get(category, "Rédigez un briefing ciblé, informatif et pertinent sur l'entreprise : {company} dans le secteur {industry} en vous basant sur les documents fournis.")}
 
-Analyze the following documents and extract key information. Provide only the briefing, no explanations or commentary:
+Analysez les documents suivants et extrayez les informations clés. Fournissez uniquement le briefing, sans explication ni commentaire :
 
 {separator}{separator.join(doc_texts)}{separator}
 
 """
-        
+
         try:
-            logger.info("Sending prompt to LLM")
+            logger.info("Envoi du prompt au modèle LLM")
             response = self.gemini_model.generate_content(prompt)
             content = response.text.strip()
             if not content:
-                logger.error(f"Empty response from LLM for {category} briefing")
+                logger.error(f"Réponse vide du LLM pour le briefing {category}")
                 return {'content': ''}
 
             # Send completion status
@@ -193,7 +201,7 @@ Analyze the following documents and extract key information. Provide only the br
                     await websocket_manager.send_status_update(
                         job_id=job_id,
                         status="briefing_complete",
-                        message=f"Completed {category} briefing",
+                        message=f"Briefing {category} complété",
                         result={
                             "step": "Briefing",
                             "category": category
@@ -202,7 +210,7 @@ Analyze the following documents and extract key information. Provide only the br
 
             return {'content': content}
         except Exception as e:
-            logger.error(f"Error generating {category} briefing: {e}")
+            logger.error(f"Erreur lors de la génération du briefing {category}: {e}")
             return {'content': ''}
 
     async def create_briefings(self, state: ResearchState) -> ResearchState:
@@ -276,9 +284,9 @@ Analyze the following documents and extract key information. Provide only the br
                     if result['content']:
                         briefings[task['category']] = result['content']
                         state[task['briefing_key']] = result['content']
-                        logger.info(f"Completed {task['data_field']} briefing ({len(result['content'])} characters)")
+                        logger.info(f"Briefing {task['data_field']} complété ({len(result['content'])} caractères)")
                     else:
-                        logger.error(f"Failed to generate briefing for {task['data_field']}")
+                        logger.error(f"Échec de la génération du briefing pour {task['data_field']}")
                         state[task['briefing_key']] = ""
                     
                     return {
